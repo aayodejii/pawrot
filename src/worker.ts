@@ -53,21 +53,27 @@ self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
       cachedModelId = modelId;
     }
 
-    const totalChunks = Math.ceil(audio.length / (16000 * 30));
+    // stride overlaps both sides, so effective advance per chunk = chunk - 2*stride
+    const chunkSec = 30;
+    const strideSec = 5;
+    const effectiveAdvance = chunkSec - 2 * strideSec;
+    const audioDurationSec = audio.length / 16000;
+    const totalChunks = Math.ceil(audioDurationSec / effectiveAdvance);
     let processedChunks = 0;
 
     self.postMessage({
       type: 'progress',
       stage: 'transcribing',
       progress: 0,
-      message: `Transcribing chunk 0 of ${totalChunks}…`,
+      message: `Transcribing 0 of ~${totalChunks} chunks…`,
     } satisfies WorkerIncoming);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (cachedPipeline as any)(audio, {
-      chunk_length_s: 30,
-      stride_length_s: 5,
+      chunk_length_s: chunkSec,
+      stride_length_s: strideSec,
       return_timestamps: true,
+      no_repeat_ngram_size: 3,
       chunk_callback: () => {
         processedChunks++;
         const pct = Math.min(Math.round((processedChunks / totalChunks) * 100), 99);
@@ -75,7 +81,7 @@ self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
           type: 'progress',
           stage: 'transcribing',
           progress: pct,
-          message: `Transcribing chunk ${processedChunks} of ${totalChunks}…`,
+          message: `Transcribing ${Math.min(processedChunks, totalChunks)} of ~${totalChunks} chunks…`,
         } satisfies WorkerIncoming);
       },
     });
