@@ -1,5 +1,10 @@
 import type { WorkerIncoming, WorkerCommand } from './types';
 
+// Load @xenova/transformers from CDN to avoid Vite bundling onnxruntime-web's
+// UMD wrapper, which breaks registerBackend initialisation in ESM workers.
+const TRANSFORMERS_CDN_URL =
+  'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let cachedPipeline: any = null;
 let cachedModelId: string | null = null;
@@ -8,10 +13,8 @@ self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
   const { audio, modelId } = e.data;
 
   try {
-    // Dynamic import prevents Vite from statically bundling onnxruntime-web,
-    // which breaks its self-registering backend side effects (registerBackend error).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { pipeline, env } = await import('@xenova/transformers') as any;
+    const { pipeline, env } = await import(/* @vite-ignore */ TRANSFORMERS_CDN_URL) as any;
     env.allowLocalModels = false;
     env.useBrowserCache = true;
 
@@ -50,11 +53,14 @@ self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
       cachedModelId = modelId;
     }
 
+    const totalChunks = Math.ceil(audio.length / (16000 * 30));
+    let processedChunks = 0;
+
     self.postMessage({
       type: 'progress',
       stage: 'transcribing',
       progress: 0,
-      message: 'Transcribing audio…',
+      message: `Transcribing chunk 0 of ${totalChunks}…`,
     } satisfies WorkerIncoming);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -62,6 +68,16 @@ self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
       chunk_length_s: 30,
       stride_length_s: 5,
       return_timestamps: true,
+      chunk_callback: () => {
+        processedChunks++;
+        const pct = Math.min(Math.round((processedChunks / totalChunks) * 100), 99);
+        self.postMessage({
+          type: 'progress',
+          stage: 'transcribing',
+          progress: pct,
+          message: `Transcribing chunk ${processedChunks} of ${totalChunks}…`,
+        } satisfies WorkerIncoming);
+      },
     });
 
     self.postMessage({
