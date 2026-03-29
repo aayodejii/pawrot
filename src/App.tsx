@@ -20,6 +20,7 @@ async function getAudioDuration(file: File): Promise<string> {
     const audio = new Audio(url);
     audio.onloadedmetadata = () => {
       URL.revokeObjectURL(url);
+      if (!isFinite(audio.duration) || isNaN(audio.duration)) { resolve('—'); return; }
       const m = Math.floor(audio.duration / 60);
       const s = Math.floor(audio.duration % 60);
       resolve(`${m}:${s.toString().padStart(2, '0')}`);
