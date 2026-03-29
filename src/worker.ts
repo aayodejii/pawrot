@@ -53,19 +53,18 @@ self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
       cachedModelId = modelId;
     }
 
-    // stride overlaps both sides, so effective advance per chunk = chunk - 2*stride
     const chunkSec = 30;
     const strideSec = 5;
     const effectiveAdvance = chunkSec - 2 * strideSec;
-    const audioDurationSec = audio.length / 16000;
-    const totalChunks = Math.ceil(audioDurationSec / effectiveAdvance);
+    const totalChunks = Math.ceil((audio.length / 16000) / effectiveAdvance);
     let processedChunks = 0;
+    const t0 = Date.now();
 
     self.postMessage({
       type: 'progress',
       stage: 'transcribing',
       progress: 0,
-      message: `Transcribing 0 of ~${totalChunks} chunks…`,
+      message: `Chunk 0 of ~${totalChunks}`,
     } satisfies WorkerIncoming);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -77,11 +76,18 @@ self.onmessage = async (e: MessageEvent<WorkerCommand>) => {
       chunk_callback: () => {
         processedChunks++;
         const pct = Math.min(Math.round((processedChunks / totalChunks) * 100), 99);
+        const elapsed = (Date.now() - t0) / 1000;
+        const secsLeft = processedChunks > 0
+          ? Math.round((elapsed / processedChunks) * Math.max(totalChunks - processedChunks, 0))
+          : 0;
+        const etr = secsLeft > 60
+          ? `~${Math.floor(secsLeft / 60)}m ${secsLeft % 60}s remaining`
+          : secsLeft > 0 ? `~${secsLeft}s remaining` : '';
         self.postMessage({
           type: 'progress',
           stage: 'transcribing',
           progress: pct,
-          message: `Transcribing ${Math.min(processedChunks, totalChunks)} of ~${totalChunks} chunks…`,
+          message: `Chunk ${Math.min(processedChunks, totalChunks)} of ~${totalChunks}${etr ? ` · ${etr}` : ''}`,
         } satisfies WorkerIncoming);
       },
     });
