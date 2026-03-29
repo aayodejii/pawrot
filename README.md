@@ -1,73 +1,75 @@
-# React + TypeScript + Vite
+# Pawrot
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Browser-based audio transcriber powered by Whisper. No backend, no API keys, no uploads. Your audio never leaves your device.
 
-Currently, two official plugins are available:
+## What it does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Drop in an audio file (or record from your mic), wait a few minutes, get a clean transcript you can copy or download. Runs entirely in your browser using [Transformers.js](https://huggingface.co/docs/transformers.js) and OpenAI's Whisper model.
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **File upload** — drag and drop or click to browse (MP3, MP4, WAV, M4A, WebM, OGG)
+- **Mic recording** — record directly in the browser
+- **Real progress** — chunk-level progress bar with estimated time remaining
+- **Export** — copy to clipboard, download as `.txt` or `.docx`
+- **Timestamps** — toggle segment-level timestamps on/off
+- **Model choice** — Whisper Small (best accuracy) or Whisper Tiny (faster, smaller download)
+- **Offline after first use** — model is cached in IndexedDB after the first 244 MB download
+- **Privacy** — zero server involvement, zero tracking
 
-## Expanding the ESLint configuration
+## Getting started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/your-username/pawrot.git
+cd pawrot
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open `http://localhost:5173` in Chrome (WebGPU) or any modern browser (WASM fallback).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### First run
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+The first transcription downloads the Whisper model (~244 MB for Small, ~75 MB for Tiny). This is a one-time download — subsequent uses load from browser cache instantly.
+
+## Tech stack
+
+- **React** + **TypeScript** + **Vite**
+- **@xenova/transformers** (Transformers.js v2) — Whisper inference in the browser
+- **Web Workers** — transcription runs off the main thread
+- **docx** — `.docx` export
+
+## How it works
+
+1. You drop an audio file or record from your mic
+2. The audio is decoded to 16kHz mono Float32 using the Web Audio API
+3. The Float32 array is sent to a Web Worker
+4. The worker loads the Whisper model (cached after first download) and runs inference in 30-second chunks
+5. Progress updates are sent back to the main thread in real time
+6. The transcript is displayed with optional timestamps
+
+No data ever leaves your browser. The Whisper model runs entirely in WebAssembly (or WebGPU if available).
+
+## Performance
+
+| Device                 | Model         | 10 min audio | 20 min audio |
+| ---------------------- | ------------- | ------------ | ------------ |
+| Modern laptop, WebGPU  | Whisper Small | ~60–90s      | ~2–3 min     |
+| Mid-range laptop, WASM | Whisper Small | ~2–4 min     | ~4–8 min     |
+| Low-end device, WASM   | Whisper Tiny  | ~1–2 min     | ~2–4 min     |
+
+## Project structure
+
 ```
+src/
+  App.tsx          # Main UI — file handling, state, progress display
+  worker.ts        # Web Worker — Whisper inference with progress callbacks
+  export.ts        # .txt and .docx download logic
+  types.ts         # Shared TypeScript types
+  index.css        # Full design system
+  main.tsx         # React entry point
+```
+
+## License
+
+[MIT](LICENSE)
