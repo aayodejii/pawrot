@@ -1,6 +1,6 @@
 # Pawrot
 
-Browser-based audio transcriber powered by Whisper. No backend, no API keys, no uploads. Your audio never leaves your device.
+Browser-based audio transcriber powered by Whisper. No backend or API keys required. Your audio never leaves your device.
 
 ## What it does
 
