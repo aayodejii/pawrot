@@ -406,6 +406,17 @@ body {
   letter-spacing: 0.04em;
 }
 
+.model-notice {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin: 12px 0 0;
+  line-height: 1.5;
+  border-left: 2px solid var(--accent);
+  padding-left: 12px;
+}
+
 /* TRANSCRIBE BUTTON */
 .btn-transcribe {
   display: flex;

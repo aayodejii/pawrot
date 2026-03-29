@@ -285,6 +285,10 @@ export default function App() {
                 Whisper Tiny
                 <span className="model-hint">~75 MB · Faster</span>
               </button>
+              <p className="model-notice">
+                First use downloads the model ({modelId === MODEL_SMALL ? '~244 MB' : '~75 MB'}).
+                This can take a few minutes on slower connections. After that, it loads from cache instantly.
+              </p>
             </div>
 
             {/* Transcribe action */}
@@ -317,7 +321,8 @@ export default function App() {
             <p className="progress-message">{progress.message}</p>
             {status === 'loading-model' && (
               <p className="progress-hint">
-                Model is cached after first download — subsequent uses are instant.
+                Downloading {modelId === MODEL_SMALL ? '~244 MB' : '~75 MB'} model — this is a one-time download.
+                Next time it loads from cache in seconds.
               </p>
             )}
           </section>
