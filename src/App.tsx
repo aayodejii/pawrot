@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback, DragEvent, ChangeEvent } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import type { DragEvent, ChangeEvent } from 'react';
 import type { AppStatus, FileInfo, ProgressState, TranscriptChunk, WorkerIncoming } from './types';
 import { downloadTxt, downloadDocx } from './export';
 import './App.css';
@@ -304,13 +305,13 @@ export default function App() {
                 {status === 'loading-model' ? 'LOADING MODEL' : 'TRANSCRIBING'}
               </span>
               <span className="progress-pct">
-                {status === 'transcribing' ? '···' : `${progress.percent}%`}
+                {`${progress.percent}%`}
               </span>
             </div>
             <div className="progress-track">
               <div
-                className={`progress-fill${status === 'transcribing' ? ' progress-fill--indeterminate' : ''}`}
-                style={status === 'loading-model' ? { width: `${progress.percent}%` } : undefined}
+                className="progress-fill"
+                style={{ width: `${progress.percent}%` }}
               />
             </div>
             <p className="progress-message">{progress.message}</p>
